@@ -1,0 +1,1 @@
+# terraform-aws-delay-s3-object-replication
