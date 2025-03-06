@@ -51,9 +51,11 @@ resource "aws_lambda_function" "delay_s3_object_replication_copy_object" {
 
   environment {
     variables = {
-      SOURCE_BUCKET      = aws_s3_bucket.source_bucket.bucket
-      DESTINATION_BUCKET = var.destination_bucket
-      SNS_TOPIC_ARN      = aws_sns_topic.delay_s3_object_replication_sns_topic.arn
+      SOURCE_BUCKET              = aws_s3_bucket.source_bucket.bucket
+      DESTINATION_BUCKET         = var.destination_bucket
+      SNS_TOPIC_ARN              = aws_sns_topic.delay_s3_object_replication_sns_topic.arn
+      MS_TEAMS_WEBHOOK           = var.ms_teams_webhook_url
+      ms_teams_reporting_enabled = var.ms_teams_reporting_enabled
     }
   }
 }
