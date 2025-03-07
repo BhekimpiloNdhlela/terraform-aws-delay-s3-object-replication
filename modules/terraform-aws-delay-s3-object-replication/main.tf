@@ -2,6 +2,15 @@ resource "aws_s3_bucket" "source_bucket" {
   bucket = var.source_bucket
 }
 
+resource "aws_s3_bucket_notification" "delay_s3_object_replication_source_bucket_notification" {
+  bucket = aws_s3_bucket.source_bucket.id
+
+  lambda_function {
+    lambda_function_arn = aws_lambda_function.delay_s3_object_replication_copy_object.arn
+    events              = ["s3:ObjectCreated:*"]
+  }
+}
+
 resource "aws_iam_role" "delay_s3_object_replication_lambda_exec_role" {
   name = "${var.naming_prefix}-copy-object-lambda-exec-role"
   assume_role_policy = jsonencode({
@@ -103,7 +112,13 @@ resource "aws_sfn_state_machine" "delay_s3_object_replication_workflow" {
       },
       "ReplicateObject" : {
         "Type" : "Task",
-        "Resource" : aws_lambda_function.delay_s3_object_replication_copy_object.arn,
+        "Resource" : "${aws_lambda_function.delay_s3_object_replication_copy_object.arn}",
+        "Retry" : [{
+          "ErrorEquals" : ["States.ALL"],
+          "IntervalSeconds" : 5,
+          "MaxAttempts" : 3,
+          "BackoffRate" : 2.0
+        }],
         "Catch" : [{
           "ErrorEquals" : ["States.ALL"],
           "Next" : "NotifyError"
@@ -130,15 +145,6 @@ resource "aws_sfn_state_machine" "delay_s3_object_replication_workflow" {
       }
     }
   })
-}
-
-resource "aws_s3_bucket_notification" "delay_s3_object_replication_source_bucket_notification" {
-  bucket = aws_s3_bucket.source_bucket.id
-
-  lambda_function {
-    lambda_function_arn = aws_lambda_function.delay_s3_object_replication_copy_object.arn
-    events              = ["s3:ObjectCreated:*"]
-  }
 }
 
 resource "aws_sns_topic" "delay_s3_object_replication_sns_topic" {
