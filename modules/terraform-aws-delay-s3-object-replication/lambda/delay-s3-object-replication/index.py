@@ -1,9 +1,3 @@
-"""
-AWS Lambda function to replicate S3 objects from a source bucket to a destination bucket.
-
-Notifications are sent via SNS (email) and optionally Microsoft Teams upon success or failure.
-"""
-
 import boto3
 import os
 import requests
@@ -12,6 +6,7 @@ import json
 # Initialize AWS clients
 s3_client = boto3.client('s3')
 sns_client = boto3.client('sns')
+sfn_client = boto3.client('stepfunctions')
 
 # Environment variables
 SNS_TOPIC_ARN = os.environ.get('SNS_TOPIC_ARN')
@@ -19,6 +14,27 @@ MS_TEAMS_WEBHOOK_URL = os.environ.get('MS_TEAMS_WEBHOOK_URL')
 MS_TEAMS_ENABLED = os.environ.get('MS_TEAMS_ENABLED', 'false').lower() == 'true'
 SOURCE_BUCKET = os.environ.get('SOURCE_BUCKET')
 DESTINATION_BUCKET = os.environ.get('DESTINATION_BUCKET')
+STATE_MACHINE_ARN = os.environ.get('STATE_MACHINE_ARN')
+
+def start_state_machine(input_data: dict) -> None:
+    """
+    Starts the Step Functions state machine.
+
+    Args:
+        input_data (dict): The input data to pass to the state machine execution.
+
+    Returns:
+        None
+    """
+    try:
+        response = sfn_client.start_execution(
+            stateMachineArn=STATE_MACHINE_ARN,
+            input=json.dumps(input_data)
+        )
+        print(f"[INFO]: State machine execution started: {response['executionArn']}")
+    except Exception as e:
+        print(f"[ERROR]: Failed to start state machine: {e}")
+        raise
 
 def copy_objects(source_bucket: str, destination_bucket: str, key: str) -> None:
     """
@@ -99,6 +115,14 @@ def lambda_handler(event: dict, context) -> dict:
         destination_bucket = event.get('destination_bucket', DESTINATION_BUCKET)
         key = event['key']
 
+        # Start the Step Functions state machine
+        state_machine_input = {
+            'bucket': source_bucket,
+            'key': key
+        }
+        start_state_machine(state_machine_input)
+
+        # Perform replication once the wait state in Step Functions completes
         copy_objects(source_bucket, destination_bucket, key)
 
         success_message = f"Object '{key}' replicated successfully."

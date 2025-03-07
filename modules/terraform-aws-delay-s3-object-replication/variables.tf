@@ -147,3 +147,33 @@ variable "source_bucket" {
     error_message = "The 'source_bucket' variable must not be empty."
   }
 }
+
+variable "error_retry_interval_seconds" {
+  type        = number
+  description = "The initial wait time in seconds before retrying a failed task."
+
+  validation {
+    condition     = var.error_retry_interval_seconds > 0
+    error_message = "The 'error_retry_interval_seconds' variable must be greater than 0."
+  }
+}
+
+variable "error_retry_max_attempts" {
+  type        = number
+  description = "The maximum number of retry attempts for a failed task."
+
+  validation {
+    condition     = var.error_retry_max_attempts > 0
+    error_message = "The 'error_retry_max_attempts' variable must be greater than 0."
+  }
+}
+
+variable "error_retry_backoff_rate" {
+  type        = number
+  description = "The exponential backoff rate for retries."
+
+  validation {
+    condition     = var.error_retry_backoff_rate > 0
+    error_message = "The 'error_retry_backoff_rate' variable must be greater than 0."
+  }
+}

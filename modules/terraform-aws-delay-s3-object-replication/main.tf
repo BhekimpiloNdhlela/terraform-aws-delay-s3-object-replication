@@ -8,6 +8,12 @@ resource "aws_s3_bucket_notification" "delay_s3_object_replication_source_bucket
   lambda_function {
     lambda_function_arn = aws_lambda_function.delay_s3_object_replication_copy_object.arn
     events              = ["s3:ObjectCreated:*"]
+
+    # # Conditionally include the prefix filter if it's set
+    # filter_prefix = var.filter_prefix != "" ? var.filter_prefix : null
+
+    # # Conditionally include the suffix filter if it's set
+    # filter_suffix = var.filter_suffix != "" ? var.filter_suffix : null
   }
 }
 
@@ -107,7 +113,7 @@ resource "aws_sfn_state_machine" "delay_s3_object_replication_workflow" {
     "States" : {
       "Wait" : {
         "Type" : "Wait",
-        "Seconds" : 300,
+        "Seconds" : var.replication_delay_seconds,
         "Next" : "ReplicateObject"
       },
       "ReplicateObject" : {
@@ -115,15 +121,15 @@ resource "aws_sfn_state_machine" "delay_s3_object_replication_workflow" {
         "Resource" : "${aws_lambda_function.delay_s3_object_replication_copy_object.arn}",
         "Retry" : [{
           "ErrorEquals" : ["States.ALL"],
-          "IntervalSeconds" : 5,
-          "MaxAttempts" : 3,
-          "BackoffRate" : 2.0
+          "IntervalSeconds" : var.error_retry_interval_seconds,
+          "MaxAttempts" : var.error_retry_max_attempts,
+          "BackoffRate" : var.error_retry_backoff_rate
         }],
         "Catch" : [{
           "ErrorEquals" : ["States.ALL"],
           "Next" : "NotifyError"
         }],
-        "Next" : "NotifySuccess"
+        "End" : true
       },
       "NotifyError" : {
         "Type" : "Task",
@@ -131,15 +137,6 @@ resource "aws_sfn_state_machine" "delay_s3_object_replication_workflow" {
         "Parameters" : {
           "TopicArn" : "${aws_sns_topic.delay_s3_object_replication_sns_topic.arn}",
           "Message" : "Replication failed for object."
-        },
-        "End" : true
-      },
-      "NotifySuccess" : {
-        "Type" : "Task",
-        "Resource" : "arn:aws:states:::sns:publish",
-        "Parameters" : {
-          "TopicArn" : "${aws_sns_topic.delay_s3_object_replication_sns_topic.arn}",
-          "Message" : "Replication succeeded for object."
         },
         "End" : true
       }
