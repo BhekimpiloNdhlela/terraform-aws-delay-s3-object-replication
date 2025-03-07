@@ -15,4 +15,7 @@ module "terraform-aws-delay-s3-object-replication" {
   source_bucket              = var.source_bucket
   destination_bucket         = var.destination_bucket
   replication_delay_seconds  = var.replication_delay_seconds
+  error_retry_interval_seconds = var.error_retry_interval_seconds
+  error_retry_max_attempts     = var.error_retry_max_attempts
+  error_retry_backoff_rate     = var.error_retry_backoff_rate
 }
