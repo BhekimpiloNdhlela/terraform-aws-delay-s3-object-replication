@@ -127,17 +127,8 @@ resource "aws_sfn_state_machine" "delay_s3_object_replication_workflow" {
         }],
         "Catch" : [{
           "ErrorEquals" : ["States.ALL"],
-          "Next" : "NotifyError"
+          "Next" : "End"
         }],
-        "End" : true
-      },
-      "NotifyError" : {
-        "Type" : "Task",
-        "Resource" : "arn:aws:states:::sns:publish",
-        "Parameters" : {
-          "TopicArn" : "${aws_sns_topic.delay_s3_object_replication_sns_topic.arn}",
-          "Message" : "Replication failed for object."
-        },
         "End" : true
       }
     }
