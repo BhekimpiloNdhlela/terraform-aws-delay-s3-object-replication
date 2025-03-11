@@ -1,9 +1,9 @@
-resource "aws_s3_bucket" "source_bucket" {
+resource "aws_s3_bucket" "delay_s3_object_replication_source_bucket" {
   bucket = var.source_bucket
 }
 
 resource "aws_s3_bucket_notification" "delay_s3_object_replication_source_bucket_notification" {
-  bucket = aws_s3_bucket.source_bucket.id
+  bucket = aws_s3_bucket.delay_s3_object_replication_source_bucket.id
 
   lambda_function {
     lambda_function_arn = aws_lambda_function.delay_s3_object_replication_copy_object.arn
@@ -40,7 +40,7 @@ resource "aws_lambda_permission" "allow_s3_to_invoke_lambda" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.delay_s3_object_replication_copy_object.function_name
   principal     = "s3.amazonaws.com"
-  source_arn    = aws_s3_bucket.source_bucket.arn
+  source_arn    = aws_s3_bucket.delay_s3_object_replication_source_bucket.arn
   depends_on    = [aws_lambda_function.delay_s3_object_replication_copy_object]
 }
 
@@ -62,17 +62,28 @@ resource "aws_lambda_function" "delay_s3_object_replication_copy_object" {
 
   source_code_hash = data.archive_file.delay_s3_object_replication.output_base64sha256
   depends_on       = [aws_cloudwatch_log_group.delay_s3_object_replication_lambda_logs]
-  # layers           = [aws_lambda_layer_version.delay_s3_object_replication.arn]
+  layers           = [aws_lambda_layer_version.delay_s3_object_replication.arn]
 
   environment {
     variables = {
-      SOURCE_BUCKET              = aws_s3_bucket.source_bucket.bucket
+      SOURCE_BUCKET              = aws_s3_bucket.delay_s3_object_replication_source_bucket.bucket
       DESTINATION_BUCKET         = var.destination_bucket
       SNS_TOPIC_ARN              = aws_sns_topic.delay_s3_object_replication_sns_topic.arn
       MS_TEAMS_WEBHOOK           = var.ms_teams_webhook_url
       ms_teams_reporting_enabled = var.ms_teams_reporting_enabled
     }
   }
+
+  lifecycle {
+    ignore_changes = [tags, tags_all]
+  }
+}
+
+resource "aws_lambda_layer_version" "delay_s3_object_replication" {
+  filename            = "${path.module}/requests-layer.zip"
+  layer_name          = "${var.naming_prefix}-requests"
+  description         = "The requests library for Lambda function to make HTTP requests to MS Teams webhook."
+  compatible_runtimes = ["python3.10"]
 }
 
 # CloudWatch log group for the Lambda function
@@ -127,7 +138,7 @@ resource "aws_sfn_state_machine" "delay_s3_object_replication_workflow" {
         }],
         "Catch" : [{
           "ErrorEquals" : ["States.ALL"],
-          "Next" : "End"
+          "End" : true
         }],
         "End" : true
       }

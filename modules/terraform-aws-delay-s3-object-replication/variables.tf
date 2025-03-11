@@ -123,7 +123,7 @@ variable "replication_delay_seconds" {
   description = "The number of seconds to delay object replication."
 
   validation {
-    condition     = var.replication_delay_seconds  > 0
+    condition     = var.replication_delay_seconds > 0
     error_message = "The 'replicatioin_delay_seconds ' variable must be greater than 0."
   }
 }

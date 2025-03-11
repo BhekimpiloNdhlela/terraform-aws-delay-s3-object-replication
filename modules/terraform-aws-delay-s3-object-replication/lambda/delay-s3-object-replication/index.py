@@ -8,7 +8,6 @@ s3_client = boto3.client('s3')
 sns_client = boto3.client('sns')
 sfn_client = boto3.client('stepfunctions')
 
-# Environment variables
 SNS_TOPIC_ARN = os.environ.get('SNS_TOPIC_ARN')
 MS_TEAMS_WEBHOOK_URL = os.environ.get('MS_TEAMS_WEBHOOK_URL')
 MS_TEAMS_ENABLED = os.environ.get('MS_TEAMS_ENABLED', 'false').lower() == 'true'
