@@ -9,6 +9,7 @@ resource "aws_s3_bucket_notification" "delay_s3_object_replication_source_bucket
     lambda_function_arn = aws_lambda_function.delay_s3_object_replication_copy_object.arn
     events              = ["s3:ObjectCreated:*"]
 
+    # TODO: Uncomment the following block of code and fill in the missing values
     # # Conditionally include the prefix filter if it's set
     # filter_prefix = var.filter_prefix != "" ? var.filter_prefix : null
 
