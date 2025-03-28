@@ -208,3 +208,7 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+*/build/*
+*/*/requests-layer/*
+*/*/requests-layer.*
+*/.terraform.lock.hcl
