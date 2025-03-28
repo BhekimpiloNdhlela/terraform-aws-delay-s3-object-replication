@@ -177,3 +177,25 @@ variable "error_retry_backoff_rate" {
     error_message = "The 'error_retry_backoff_rate' variable must be greater than 0."
   }
 }
+
+variable "s3_event_notification_filter_prefix" {
+  type        = string
+  description = "The prefix to filter objects in the source bucket for replication."
+  default     = null
+
+  validation {
+    condition     = var.s3_event_notification_filter_prefix == null || can(regex(".*", var.s3_event_notification_filter_prefix))
+    error_message = "The filter prefix must be either null or a non-empty string."
+  }
+}
+
+variable "s3_event_notification_filter_suffix" {
+  type        = string
+  description = "The suffix to filter objects in the source bucket for replication."
+  default     = null
+
+  validation {
+    condition     = var.s3_event_notification_filter_suffix == null || can(regex(".*", var.s3_event_notification_filter_suffix))
+    error_message = "The filter suffix must be either null or a non-empty string."
+  }
+}
