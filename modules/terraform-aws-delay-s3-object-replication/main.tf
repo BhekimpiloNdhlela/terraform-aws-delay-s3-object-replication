@@ -9,12 +9,11 @@ resource "aws_s3_bucket_notification" "delay_s3_object_replication_source_bucket
     lambda_function_arn = aws_lambda_function.delay_s3_object_replication_copy_object.arn
     events              = ["s3:ObjectCreated:*"]
 
-    # TODO: Uncomment the following block of code and fill in the missing values
-    # # Conditionally include the prefix filter if it's set
-    # filter_prefix = var.filter_prefix != "" ? var.filter_prefix : null
+    # add filter_prefix only if it's set
+    filter_prefix = var.s3_event_notification_filter_prefix != null ? var.s3_event_notification_filter_prefix : null
 
-    # # Conditionally include the suffix filter if it's set
-    # filter_suffix = var.filter_suffix != "" ? var.filter_suffix : null
+    # add filter_suffix only if it's set
+    filter_suffix = var.s3_event_notification_filter_suffix != null ? var.s3_event_notification_filter_suffix : null
   }
 }
 
@@ -126,7 +125,7 @@ resource "aws_sfn_state_machine" "delay_s3_object_replication_workflow" {
       "Wait" : {
         "Type" : "Wait",
         "Seconds" : var.replication_delay_seconds,
-        "Next" : "ReplicateObject"
+        "Next" : "ReplicateObject" # Ensuring Next is specified
       },
       "ReplicateObject" : {
         "Type" : "Task",
@@ -136,17 +135,12 @@ resource "aws_sfn_state_machine" "delay_s3_object_replication_workflow" {
           "IntervalSeconds" : var.error_retry_interval_seconds,
           "MaxAttempts" : var.error_retry_max_attempts,
           "BackoffRate" : var.error_retry_backoff_rate
-        }],
-        "Catch" : [{
-          "ErrorEquals" : ["States.ALL"],
-          "End" : true
-        }],
+        }]
         "End" : true
       }
     }
   })
 }
-
 resource "aws_sns_topic" "delay_s3_object_replication_sns_topic" {
   name = "${var.naming_prefix}-s3-replication-error-notifications"
 }

@@ -16,5 +16,5 @@ data "aws_iam_policy_document" "lambda_assume_role_policy" {
 data "archive_file" "delay_s3_object_replication" {
   type        = "zip"
   source_dir  = "${path.module}/lambda/delay-s3-object-replication"
-  output_path = "${path.module}/builds/lambda/delay-s3-object-replication.zip"
+  output_path = "${path.module}/build/delay-s3-object-replication.zip"
 }
